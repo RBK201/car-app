@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>車賃計算</title>
+
+<style>
+
+body{
+    margin:0;
+    padding:10px;
+    font-family:sans-serif;
+    background:#f5f5f5;
+}
+
+canvas{
+    width:100%;
+    max-width:100%;
+    border:1px solid #333;
+    background:white;
+    touch-action:none;
+}
+
+#result{
+    margin-top:10px;
+    padding:10px;
+    background:white;
+    border-radius:8px;
+    font-size:18px;
+    line-height:1.6;
+}
+
+button{
+    padding:10px 15px;
+    margin-bottom:10px;
+    font-size:16px;
+}
+
+</style>
+</head>
+<body>
+
+<button id="saveMode">
+座標登録モード OFF
+</button>
+
+<button id="downloadCSV">
+CSV保存
+</button>
+
+<br>
+
+<canvas id="map" width="800" height="600"></canvas>
+
+<div id="result">
+クリックしてください
+</div>
+
+<script>
+
+const canvas = document.getElementById("map");
+const ctx = canvas.getContext("2d");
+
+const resultDiv = document.getElementById("result");
+const saveBtn = document.getElementById("saveMode");
+
+
+// =========================
+// 地図画像
+// =========================
+
+const img = new Image();
+
+img.src = "map.png";
+
+img.onload = async function () {
+
+    // 地図表示
+    ctx.drawImage(
+        img,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    // CSV読込
+    await loadAreasCSV();
+
+    // ↓追加
+    await loadMoveCSV();
+
+    // ↓追加
+    await loadFixedCSV();
+
+    // 座標描画
+    drawPoints();
+};
+
+
+// =========================
+// 地区座標
+// =========================
+
+const areas = {};
+
+
+// =========================
+// 固定距離
+// =========================
+
+const fixedDistance = {};
+
+
+// =========================
+// 移動距離
+// =========================
+
+const moveDistance = {};
+
+
+// =========================
+// 座標表示
+// =========================
+
+function drawPoints(){
+
+    for(let name in areas){
+
+        const a = areas[name];
+
+       if(editMode){
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            a.x,
+            a.y,
+            15,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            "rgba(255,0,0,0.4)";
+
+        ctx.fill();
+        }
+    }
+}
+
+
+// =========================
+// 地区判定
+// =========================
+
+function getArea(x, y){
+
+    for(let name in areas){
+
+        const a = areas[name];
+
+        if(
+            Math.abs(a.x - x) < 20 &&
+            Math.abs(a.y - y) < 20
+        ){
+            return name;
+        }
+    }
+
+    return null;
+}
+
+
+// =========================
+// 座標登録モード
+// =========================
+
+let editMode = false;
+
+saveBtn.addEventListener("click", () => {
+
+    editMode = !editMode;
+
+    saveBtn.innerText =
+        editMode
+        ? "座標登録モード ON"
+        : "座標登録モード OFF";
+    redraw();
+});
+
+
+// =========================
+// クリック管理
+// =========================
+
+let selected = [];
+
+canvas.addEventListener("click", function(e){
+
+    const rect =
+        canvas.getBoundingClientRect();
+
+    const scaleX =
+        canvas.width / rect.width;
+
+    const scaleY =
+        canvas.height / rect.height;
+
+    const x =
+        (e.clientX - rect.left) * scaleX;
+
+    const y =
+        (e.clientY - rect.top) * scaleY;
+
+
+    // =====================
+    // 座標登録モード
+    // =====================
+
+    if(editMode){
+
+        const name =
+            prompt("地区名を入力");
+
+        if(name){
+
+            areas[name] = {
+                x: Math.round(x),
+                y: Math.round(y)
+            };
+
+            console.log(
+                `"${name}": { x:${Math.round(x)}, y:${Math.round(y)} },`
+            );
+
+            redraw();
+        }
+
+        return;
+    }
+
+
+    // =====================
+    // 地区取得
+    // =====================
+
+    const area = getArea(x, y);
+
+    if(!area) return;
+
+    selected.push(area);
+
+
+    // =====================
+    // 1件目
+    // =====================
+
+    if(selected.length === 1){
+
+        resultDiv.innerHTML =
+            `${selected[0]} → 次を選択`;
+
+    }
+
+
+    // =====================
+    // 2件目
+    // =====================
+
+    if(selected.length === 2){
+
+        const from = selected[0];
+        const to = selected[1];
+
+        const key =
+            from + "-" + to;
+        
+        const moveKm =
+            moveDistance[key] || 0;
+
+        console.log(key);
+        console.log(moveDistance[key]);
+
+        const fixedKm =
+            fixedDistance[to] || 0;
+
+        let totalKm;
+
+        // 同じ地区
+        if(from === to){
+
+           totalKm =
+           fixedKm * 2;
+
+        }else{
+
+              totalKm =
+                moveKm + fixedKm;
+        }
+        
+
+        const price =
+            totalKm * 20;
+
+        resultDiv.innerHTML = `
+            <b>${from} → ${to}</b><br>
+            移動距離: ${moveKm}km<br>
+            固定距離: ${fixedKm}km<br>
+            合計距離: ${totalKm}km<br>
+            金額: ${price}円
+        `;
+
+        selected = [];
+    }
+
+});
+
+
+// =========================
+// 再描画
+// =========================
+
+function redraw(){
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    ctx.drawImage(
+        img,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    drawPoints();
+}
+
+// =========================
+// CSVダウンロード
+// =========================
+
+document
+.getElementById("downloadCSV")
+.addEventListener("click", () => {
+
+    let csv = "name,x,y\n";
+
+    for(let name in areas){
+
+        csv +=
+            `${name},${areas[name].x},${areas[name].y}\n`;
+    }
+
+    // CSVファイル作成
+    const blob = new Blob(
+        ["\uFEFF" + csv],
+    { type: "text/csv;charset=utf-8;" }
+);
+    // ダウンロードリンク作成
+    const link =
+        document.createElement("a");
+
+    link.href =
+        URL.createObjectURL(blob);
+
+    link.download = "areas.csv";
+
+    // 自動クリック
+    link.click();
+
+});
+
+// =========================
+// CSV読込
+// =========================
+
+async function loadAreasCSV(){
+
+    const response =
+        await fetch("areas.csv");
+
+    const text =
+        await response.text();
+
+    const lines =
+        text.trim().split("\n");
+
+    // 1行目(name,x,y)を除外
+    lines.shift();
+
+    lines.forEach(line => {
+
+        const cols =
+            line.split(",");
+
+        const name = cols[0];
+
+        const x =
+            Number(cols[1]);
+
+        const y =
+            Number(cols[2]);
+
+        areas[name] = {
+            x,
+            y
+        };
+
+    });
+
+    console.log("CSV読込完了", areas);
+}
+// =========================
+// 距離CSV読込
+// =========================
+
+async function loadMoveCSV(){
+
+    const response =
+        await fetch("move.csv");
+
+    const text =
+        await response.text();
+
+    const lines =
+        text.trim().split("\n");
+
+    // ヘッダー除外
+    lines.shift();
+
+    lines.forEach(line => {
+
+        const cols =
+            line.split(",");
+
+        const from =
+            cols[0].trim();
+
+        const to =
+            cols[1].trim();
+
+        const km =
+            Number(cols[2]);
+
+        const key =
+            from + "-" + to;
+
+        moveDistance[key] = km;
+        
+        const reverseKey =
+            to + "-" + from;
+
+        moveDistance[reverseKey] = km;
+
+    });
+
+    console.log(
+        "距離CSV読込完了",
+        moveDistance
+    );
+    console.log(moveDistance);
+}
+// =========================
+// 固定距離CSV読込
+// =========================
+
+async function loadFixedCSV(){
+
+    const response =
+        await fetch("fixed.csv");
+
+    const text =
+        await response.text();
+
+    const lines =
+        text.trim().split("\n");
+
+    // ヘッダー削除
+    lines.shift();
+
+    lines.forEach(line => {
+
+        const cols =
+            line.split(",");
+
+        const area =
+            cols[0].trim();
+
+        const fixed =
+            Number(cols[1]);
+
+        fixedDistance[area] = fixed;
+
+    });
+
+    console.log(
+        "固定距離CSV読込完了",
+        fixedDistance
+    );
+}
+
+</script>
+
+</body>
+</html>
