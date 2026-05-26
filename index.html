@@ -17,11 +17,23 @@ body{
 }
 
 canvas{
-    width:120vw;
+    width:100%;
+    max-width:800px;
     height:auto;
     border:1px solid #333;
     background:white;
     touch-action:none;
+    display:block;
+    margin:auto;
+}
+
+@media (max-width: 768px){
+
+    canvas{
+        width:130vw;
+        max-width:none;
+    }
+
 }
 
 #result{
@@ -47,7 +59,7 @@ button{
 座標登録モード OFF
 </button>
 
-<button id="downloadCSV">
+<button id="downloadCSV" style="display:none;">
 CSV保存
 </button>
 
@@ -190,6 +202,15 @@ saveBtn.addEventListener("click", () => {
         editMode
         ? "座標登録モード ON"
         : "座標登録モード OFF";
+
+     // CSVボタン表示切替
+    document.getElementById(
+        "downloadCSV"
+    ).style.display =
+        editMode
+        ? "inline-block"
+        : "none";
+
     redraw();
 });
 
