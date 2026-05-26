@@ -105,6 +105,8 @@ CSV保存
 
 <canvas id="map" width="800" height="600"></canvas>
 
+<div id="selectedArea"></div>
+
 <div id="history"></div>
 
 <script>
@@ -115,6 +117,8 @@ const ctx = canvas.getContext("2d");
 const resultDiv = document.getElementById("result");
 const historyDiv =
     document.getElementById("history");
+const selectedAreaDiv =
+    document.getElementById("selectedArea");
 const saveBtn = document.getElementById("saveMode");
 
 
@@ -311,9 +315,25 @@ canvas.addEventListener("click", function(e){
 
     const area = getArea(x, y);
 
-    if(!area) return;
+     if(!area) return;
 
-    selected.push(area);
+     selected.push(area);
+
+     if(selected.length === 1){
+
+     selectedAreaDiv.innerHTML = `
+
+     <div class="history-item">
+
+     <b>${area}</b><br>
+      
+     地区を選択中...
+
+     </div>
+
+     `;
+
+    }
 
      if(selected.length > 2){
      selected.shift();
@@ -324,6 +344,7 @@ canvas.addEventListener("click", function(e){
 
     if(selected.length === 2){
 
+        selectedAreaDiv.innerHTML = "";
         const from = selected[0];
         const to = selected[1];
 
