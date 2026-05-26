@@ -51,6 +51,39 @@ button{
     font-size:16px;
 }
 
+#history{
+
+    margin-top:10px;
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+}
+
+.history-item{
+
+    background:white;
+
+    padding:10px;
+
+    border-radius:8px;
+
+    border:1px solid #ddd;
+
+    min-width:250px;
+}
+
+.delete-btn{
+
+    margin-left:10px;
+
+    padding:5px 10px;
+
+    font-size:14px;
+}
+
 </style>
 </head>
 <body>
@@ -67,9 +100,7 @@ CSV保存
 
 <canvas id="map" width="800" height="600"></canvas>
 
-<div id="result">
-クリックしてください
-</div>
+<div id="history"></div>
 
 <script>
 
@@ -77,6 +108,8 @@ const canvas = document.getElementById("map");
 const ctx = canvas.getContext("2d");
 
 const resultDiv = document.getElementById("result");
+const historyDiv =
+    document.getElementById("history");
 const saveBtn = document.getElementById("saveMode");
 
 
@@ -221,6 +254,7 @@ saveBtn.addEventListener("click", () => {
 
 let selected = [];
 
+
 canvas.addEventListener("click", function(e){
 
     const rect =
@@ -281,13 +315,6 @@ canvas.addEventListener("click", function(e){
     // 1件目
     // =====================
 
-    if(selected.length === 1){
-
-        resultDiv.innerHTML =
-            `${selected[0]} → 次を選択`;
-
-    }
-
 
     // =====================
     // 2件目
@@ -327,16 +354,54 @@ canvas.addEventListener("click", function(e){
 
         const price =
             totalKm * 20;
+        
+        historyDiv.innerHTML += `
 
-        resultDiv.innerHTML = `
-            <b>${from} → ${to}</b><br>
-            移動距離: ${moveKm}km<br>
-            固定距離: ${fixedKm}km<br>
-            合計距離: ${totalKm}km<br>
-            金額: ${price}円
-        `;
 
-        selected = [];
+
+         <div class="history-item">
+
+        <b>${from} → ${to}</b><br>
+    
+         移動距離: ${moveKm}km<br>
+
+         固定距離: ${fixedKm}km<br>
+
+        合計距離: ${totalKm}km<br>
+
+         金額: ${price}円
+
+         <br><br>
+
+        <button
+         onclick="this.parentElement.remove()"
+          >
+         削除
+         </button>
+
+         </div>
+
+         <hr>
+         `;
+
+         // 履歴を最大2件にする
+         const items =
+         historyDiv.querySelectorAll(".history-item");
+
+         if(items.length > 2){
+
+         items[0].remove();
+
+         const hrs =
+         historyDiv.querySelectorAll("hr");
+
+         if(hrs.length > 0){
+         hrs[0].remove();
+        }
+     }
+      selected = [];  
+    
+         
     }
 
 });
@@ -529,6 +594,7 @@ async function loadFixedCSV(){
         fixedDistance
     );
 }
+
 
 </script>
 
