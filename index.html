@@ -310,15 +310,12 @@ canvas.addEventListener("click", function(e){
 
     selected.push(area);
 
+     if(selected.length > 2){
+     selected.shift();
+     }
 
-    // =====================
-    // 1件目
-    // =====================
 
-
-    // =====================
-    // 2件目
-    // =====================
+    
 
     if(selected.length === 2){
 
