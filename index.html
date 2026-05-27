@@ -107,6 +107,8 @@ CSV保存
 
 <div id="selectedArea"></div>
 
+<div id="totalPrice"></div>
+
 <div id="history"></div>
 
 <script>
@@ -117,6 +119,8 @@ const ctx = canvas.getContext("2d");
 const resultDiv = document.getElementById("result");
 const historyDiv =
     document.getElementById("history");
+const totalPriceDiv =
+    document.getElementById("totalPrice");
 const selectedAreaDiv =
     document.getElementById("selectedArea");
 const saveBtn = document.getElementById("saveMode");
@@ -408,7 +412,7 @@ canvas.addEventListener("click", function(e){
          `;
 
          // 履歴を最大2件にする
-         const items =
+         let items =
          historyDiv.querySelectorAll(".history-item");
 
          if(items.length > 2){
@@ -416,11 +420,39 @@ canvas.addEventListener("click", function(e){
          items[0].remove();
 
         
-     }
-      selected = [];  
+        }
+
+         // 削除後に再取得
+         items =
+         historyDiv.querySelectorAll(".history-item");
+      
     
          
-    }
+    
+
+    let total = 0;
+
+     items.forEach(item => {
+
+      const text = item.innerText;
+
+      const match =
+        text.match(/金額: (\d+)円/);
+
+     if(match){
+        total += Number(match[1]);
+     }
+
+    });
+
+     totalPriceDiv.innerHTML = `
+     <h2>合計金額: ${total}円</h2>
+     `;
+
+    selected = [];
+
+}
+    
 
 });
 
